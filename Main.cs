@@ -3,6 +3,7 @@ using GTModTemplate.Utilities;
 using BepInEx;
 using UnityEngine;
 using Utilla.Attributes;
+using UnityEngine.SceneManagement;
 
 namespace GTModTemplate;
 
@@ -14,6 +15,10 @@ public class Main : BaseUnityPlugin
 {
     public static Main? Instance;
     private GameObject? ForestBarrier;
+    private GameObject? MountainBarrier;
+    private GameObject? CanyonBarrier;
+
+    private bool InModded;
 
     // The starting point of the mod. This methodd is called when the mod is loaded.
     private void Start()
@@ -27,7 +32,9 @@ public class Main : BaseUnityPlugin
         // here to prevent your mod from breaking every other mod in the case
         // that your OnPlayerSpawned() method causes errors.
         GorillaTagger.OnPlayerSpawned(() => MethodUtilities.Attempt(OnPlayerSpawned));
-        
+
+        SceneManager.sceneLoaded += OnSceneLoaded;
+
         // This would be the spot to unload all of your AssetBundles when your
         // assets have been loaded in. Save some memory!
         AssetBundleUtilities.FreeCache();
@@ -41,20 +48,53 @@ public class Main : BaseUnityPlugin
         {
             print("Unable to find forest barrier!!");
         }
+
+        InModded = false;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == "Mountain")
+        {
+            MountainBarrier = GameObject.Find("Mountain/Mountain_ForceVolumes/MountainDomeCollision");
+
+            if (MountainBarrier == null)
+                print("Mountain barrier not found!");
+            else
+                MountainBarrier.SetActive(!InModded);
+        }
+
+        if (scene.name == "Canyon2")
+        {
+            CanyonBarrier = GameObject.Find("Canyon/Canyon/Canyon_ForceVolumes/CanyonDome_CollisionOnly");
+
+            if (CanyonBarrier == null)
+                print("Canyon barrier not found!");
+            else
+                CanyonBarrier.SetActive(!InModded);
+        }
     }
 
     [ModdedGamemodeJoin]
     private void OnJoin()
     {
-        print("Disabling Forest Barrier");
-        ForestBarrier.SetActive(false);
+        print("Disabling Barriers");
+        if (ForestBarrier != null) ForestBarrier.SetActive(false);
+        if (MountainBarrier != null) MountainBarrier.SetActive(false);
+        if (CanyonBarrier != null) CanyonBarrier.SetActive(false);
+
+        InModded = true;
     }
 
     [ModdedGamemodeLeave]
     private void OnLeave()
     {
-        print("Enabling Forest Barrier");
-        ForestBarrier.SetActive(true);
+        print("Enabling Barriers");
+        if (ForestBarrier != null) ForestBarrier.SetActive(true);
+        if (MountainBarrier != null) MountainBarrier.SetActive(true);
+        if (CanyonBarrier != null) CanyonBarrier.SetActive(true);
+
+        InModded = false;
     }
 
 }
